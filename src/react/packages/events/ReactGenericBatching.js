@@ -65,7 +65,6 @@ export function setBatchingImplementation(
   interactiveUpdatesImpl,
   flushInteractiveUpdatesImpl,
 ) {
-  debugger
   _batchedUpdatesImpl = batchedUpdatesImpl;
   _interactiveUpdatesImpl = interactiveUpdatesImpl;
   _flushInteractiveUpdatesImpl = flushInteractiveUpdatesImpl;

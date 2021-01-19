@@ -679,6 +679,7 @@ const ReactDOM: Object = {
     container: DOMContainer,
     callback: ?Function,
   ) {
+    debugger
     invariant(
       isValidContainer(container),
       'Target container is not a DOM element.',

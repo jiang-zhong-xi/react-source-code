@@ -138,6 +138,7 @@
   },
   "devDependencies": {
     "@babel/plugin-transform-flow-strip-types": "^7.7.4",
-    "fbjs": "^1.0.0"
+    "fbjs": "^1.0.0",
+    "react-scripts": "^3.4.0"
   }
 }

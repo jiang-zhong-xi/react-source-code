@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
-debugger
 
 // <App />最终被babel-loader转为createElement的形式，最终生成ReactElement
 ReactDOM.render(<App />, document.getElementById('root'), function() {
