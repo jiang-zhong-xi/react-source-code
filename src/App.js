@@ -1,32 +1,36 @@
 import React from 'react';
 import './App.css';
+const e = React.createElement;
 
-class App extends React.Component{
-  constructor(props) {
-    super(props)
-    this.state = {
-      count: true,
-      list: [1,2,3,4]
-    }
-  }
-  clickHandler = () => {
-   this.setState({
-     list: [1,3,2,4]
-   })
+class Test extends React.Component {
+  componentDidMount() {
+    let start = Date.now();
+    setTimeout(() => {
+      while (Date.now() - start < 10000) {
+        // loop
+      }
+    }, 2000)
   }
   render() {
-    return (
-      <div className="App" onClick={this.clickHandler}>
-        <ul>
-        {
-          this.state.list &&
-          this.state.list.map(item => {
-          return <li key={item}>{item}</li>
-          })
-        }
-        </ul>
-      </div>
-    );
+    return <div>hello</div>
   }
 }
-export default App;
+
+class LikeButton extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { liked: false };
+  }
+  render() {
+    return e('div', {}, [
+      e(Test),
+      e(
+      'button',
+      { onClick: () => {
+        debugger
+        this.setState({ liked: !this.state.liked }, () => {debugger; })}  },
+        this.state.liked ? 'Like' : 'Unlike'
+    )]);
+  }
+}
+export default LikeButton;

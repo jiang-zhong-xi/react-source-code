@@ -111,7 +111,7 @@ function getContextForSubtree(
 
   return parentContext;
 }
-
+// 创建更新并添加到更新列表
 function scheduleRootUpdate(
   current: Fiber,
   element: ReactNodeList,
@@ -135,7 +135,7 @@ function scheduleRootUpdate(
       );
     }
   }
-
+  // 创建一个update，update携带着element，回调函数
   const update = createUpdate(expirationTime);
   // Caution: React DevTools currently depends on this property
   // being called "element".
@@ -151,8 +151,9 @@ function scheduleRootUpdate(
     );
     update.callback = callback;
   }
-
+  // 执行passiveEffectCallback
   flushPassiveEffects();
+  // 把update安排进current的更新链表
   enqueueUpdate(current, update);
   scheduleWork(current, expirationTime);
 
@@ -271,7 +272,7 @@ function findHostInstanceWithWarning(
   }
   return findHostInstance(component);
 }
-
+// 创建一个FiberRoot
 export function createContainer(
   containerInfo: Container,
   isConcurrent: boolean,
@@ -280,14 +281,18 @@ export function createContainer(
   return createFiberRoot(containerInfo, isConcurrent, hydrate);
 }
 // 获取当前时间戳，通过当前时间戳计算过期时间
+// 开始更新Container对应的expirationTime
 export function updateContainer(
   element: ReactNodeList,
   container: OpaqueRoot,
   parentComponent: ?React$Component<any, any>,
   callback: ?Function,
 ): ExpirationTime {
+  debugger
   const current = container.current;
+  // 返回一个由当前时间决定的时间戳
   const currentTime = requestCurrentTime();
+  // 计算当前的fiber的优先级
   const expirationTime = computeExpirationForFiber(currentTime, current);
   return updateContainerAtExpirationTime(
     element,
@@ -311,7 +316,7 @@ export {
   flushControlled,
   flushSync,
 };
-
+// 返回HostFiber的第一个子元素的DOM
 export function getPublicRootInstance(
   container: OpaqueRoot,
 ): React$Component<any, any> | PublicInstance | null {

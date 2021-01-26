@@ -109,6 +109,7 @@ function defineRefPropWarningGetter(props, displayName) {
  * @internal
  */
 const ReactElement = function(type, key, ref, self, source, owner, props) {
+  // react会校验$$typeof，避免直接插入ReactElement类似的数据，是一种安全措施
   const element = {
     // This tag allows us to uniquely identify this as a React Element
     $$typeof: REACT_ELEMENT_TYPE,
@@ -155,6 +156,7 @@ const ReactElement = function(type, key, ref, self, source, owner, props) {
       writable: false,
       value: source,
     });
+    // 对象以及对象的props冻结
     if (Object.freeze) {
       Object.freeze(element.props);
       Object.freeze(element);
@@ -168,10 +170,13 @@ const ReactElement = function(type, key, ref, self, source, owner, props) {
  * Create and return a new ReactElement of the given type.
  * See https://reactjs.org/docs/react-api.html#createelement
  */
+// type 类型（div、home），config 属性（class），children 子节点（null或者[]）
+// children后面还可以有参数，这样children就是一个子元素，后面的也是子元素
 export function createElement(type, config, children) {
   let propName;
 
   // Reserved names are extracted
+  // config中的key ref self source属性单独保存，其余属性存入props
   const props = {};
 
   let key = null;
@@ -180,10 +185,10 @@ export function createElement(type, config, children) {
   let source = null;
 
   if (config != null) {
-    if (hasValidRef(config)) {
+    if (hasValidRef(config)) { // 存在ref属性
       ref = config.ref;
     }
-    if (hasValidKey(config)) {
+    if (hasValidKey(config)) { // 存在key属性，转为字符串类型
       key = '' + config.key;
     }
 
@@ -202,6 +207,7 @@ export function createElement(type, config, children) {
 
   // Children can be more than one argument, and those are transferred onto
   // the newly allocated props object.
+  // 子元素都存到props.children中
   const childrenLength = arguments.length - 2;
   if (childrenLength === 1) {
     props.children = children;
@@ -219,6 +225,7 @@ export function createElement(type, config, children) {
   }
 
   // Resolve default props
+  // default props也存入props
   if (type && type.defaultProps) {
     const defaultProps = type.defaultProps;
     for (propName in defaultProps) {

@@ -327,6 +327,7 @@ function ReactWork() {
   this._didCommit = false;
   // TODO: Avoid need to bind by replacing callbacks in the update queue with
   // list of Work objects.
+  //  ???
   this._onCommit = this._onCommit.bind(this);
 }
 ReactWork.prototype.then = function(onCommit: () => mixed): void {
@@ -341,6 +342,8 @@ ReactWork.prototype.then = function(onCommit: () => mixed): void {
   callbacks.push(onCommit);
 };
 ReactWork.prototype._onCommit = function(): void {
+  // 看看update是如何使用的
+  debugger
   if (this._didCommit) {
     return;
   }
@@ -367,14 +370,17 @@ function ReactRoot(
   isConcurrent: boolean,
   hydrate: boolean,
 ) {
+  // 创建FifberRoot对象
   const root = createContainer(container, isConcurrent, hydrate);
   this._internalRoot = root;
 }
+// 开启渲染
 ReactRoot.prototype.render = function(
   children: ReactNodeList,
   callback: ?() => mixed,
 ): Work {
   const root = this._internalRoot;
+  // work用于存储多个函数，调用work的commit一次触发所有函数
   const work = new ReactWork();
   callback = callback === undefined ? null : callback;
   if (__DEV__) {
@@ -475,7 +481,7 @@ function getReactRootElementInContainer(container: any) {
     return container.firstChild;
   }
 }
-// 根据Container的Root节点判断是否应该hydrate
+// 根据Container的根节点的类型是否为ELEMENT_NODE和是否包含data-reactroot属性判断是否应该hydrate
 function shouldHydrateDueToLegacyHeuristic(container) {
   const rootElement = getReactRootElementInContainer(container);
   return !!(
@@ -492,18 +498,18 @@ setBatchingImplementation(
 );
 
 let warnedAboutHydrateAPI = false;
-// Hydrate：生成
-// 如果需要注水，则将container的子节点都移除，调用React Root方法
 function legacyCreateRootFromDOMContainer(
   container: DOMContainer,
   forceHydrate: boolean,
 ): Root {
+  // Hydrate是服务端和客户端渲染合并差异的
   const shouldHydrate =
-    forceHydrate || shouldHydrateDueToLegacyHeuristic(container);
+    forceHydrate || shouldHydrateDueToLegacyHeuristic(container); // shouldHydrateDueToLegacyHeuristic由于之前的操作导致需要Hydrate
   // First clear any existing content.
   if (!shouldHydrate) {
     let warned = false;
     let rootSibling;
+    // 移除container的所有子节点
     while ((rootSibling = container.lastChild)) {
       if (__DEV__) {
         if (
@@ -554,8 +560,8 @@ function legacyRenderSubtreeIntoContainer(
   // member of intersection type." Whyyyyyy.
   let root: Root = (container._reactRootContainer: any);
   if (!root) {
-    // Initial mount
-    // 创建root fiber和rootHostFiber
+    // Initial mount 第一次
+    // 创建FiberRoot，其中的current代表children中的第一个节点（即APP），赋值给container._reactRootContainer
     root = container._reactRootContainer = legacyCreateRootFromDOMContainer(
       container,
       forceHydrate,
@@ -673,13 +679,13 @@ const ReactDOM: Object = {
       callback,
     );
   },
-/* 校验Container是否是DOM元素 */
   render(
     element: React$Element<any>,
     container: DOMContainer,
     callback: ?Function,
-  ) {
-    debugger
+    ) {
+      debugger
+      /* 校验Container是否是DOM元素 */
     invariant(
       isValidContainer(container),
       'Target container is not a DOM element.',

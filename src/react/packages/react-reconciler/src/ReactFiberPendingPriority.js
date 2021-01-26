@@ -15,7 +15,7 @@ import {NoWork} from './ReactFiberExpirationTime';
 // TODO: Offscreen updates should never suspend. However, a promise that
 // suspended inside an offscreen subtree should be able to ping at the priority
 // of the outer render.
-
+// 更新root的最早、最晚时间
 export function markPendingPriorityLevel(
   root: FiberRoot,
   expirationTime: ExpirationTime,
@@ -27,6 +27,8 @@ export function markPendingPriorityLevel(
 
   // Update the latest and earliest pending times
   const earliestPendingTime = root.earliestPendingTime;
+  // 比较expirationTime和earliestPendingTime、latestPendingTime,
+  // 更新earliestPendingTime和latestPendingTime
   if (earliestPendingTime === NoWork) {
     // No other pending updates.
     root.earliestPendingTime = root.latestPendingTime = expirationTime;
@@ -246,18 +248,24 @@ export function didExpireAtExpirationTime(
     root.nextExpirationTimeToWorkOn = currentTime;
   }
 }
-// 下一个work的expiration time
+// 计算下一个work的expiration即root.nextExpirationTimeToWorkOn，包括以下情况
+/**
+ * 1. Pending中的最高优先级的不是NoWork就取这个 （等待中的任务）
+ * 2. Pending中的最高优先级的是NoWork，就取pinged中的这个 （可被重试的任务）
+ * 3. 如果pending和pinged中的都是NoWork，然后
+ * 4. 如果挂起的优先级最高的比 ？？？
+*/
 function findNextExpirationTimeToWorkOn(completedExpirationTime, root) {
   const earliestSuspendedTime = root.earliestSuspendedTime;
   const latestSuspendedTime = root.latestSuspendedTime;
   const earliestPendingTime = root.earliestPendingTime;
   const latestPingedTime = root.latestPingedTime;
-
+  // 如果earliestPendingTime是NoWork状态，则下次的ExpirationTime是latestPingedTime
   // Work on the earliest pending time. Failing that, work on the latest
   // pinged time.
   let nextExpirationTimeToWorkOn =
     earliestPendingTime !== NoWork ? earliestPendingTime : latestPingedTime;
-
+  // earliestPendingTime和latestPingedTime都是NoWork状态，看看是否存在比刚刚完成的优先级低的挂起的work
   // If there is no pending or pinged work, check if there's suspended work
   // that's lower priority than what we just completed.
   if (
@@ -270,7 +278,7 @@ function findNextExpirationTimeToWorkOn(completedExpirationTime, root) {
     // it's ready to commit.
     nextExpirationTimeToWorkOn = latestSuspendedTime;
   }
-
+  // 如果存在就先把挂起的优先级最高的作为expirationTime，expirationTime为本次的优先级水平
   let expirationTime = nextExpirationTimeToWorkOn;
   if (expirationTime !== NoWork && earliestSuspendedTime > expirationTime) {
     // Expire using the earliest known expiration time.

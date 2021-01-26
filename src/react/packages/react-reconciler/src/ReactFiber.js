@@ -225,27 +225,28 @@ function FiberNode(
   // Instance
   // 标识fiber类型的标签标识
   this.tag = tag; 
-  // child的唯一标识
+  // type和key是一个玩意？
   this.key = key;
   // elementType和type大部分情况下相同，唯有reactElement的$$typeOf是REACT_LAZY_TYPE时type是null
   this.elementType = null;
-  // 和这个fiber相关的function、 class
+  // 和这个fiber对应的组件或者DOM元素名称
   this.type = null;
   // 这个fiber相关的局部state（DOM节点）
   this.stateNode = null;
 
   // Fiber
-  // 返回的parent恰好与返回的fiber相同，其它字段和当前fiber一样
+  // 父级fiber
   this.return = null;
-  // 连接树形结构
+  // 连接树形结构，render返回的元素
   this.child = null;
+  // 同级节点
   this.sibling = null;
   this.index = 0;
   // ref用来访问这个节点
   this.ref = null;
-  // 输入来自处理fiber的数据，props参数
+  // 输入来自处理fiber的数据，props参数，即新的props
   this.pendingProps = pendingProps;
-  // props的处理结果
+  // props的处理结果，即旧的props
   this.memoizedProps = null;
   	// state的更新队列
   this.updateQueue = null;
@@ -267,7 +268,7 @@ function FiberNode(
 
   this.expirationTime = NoWork;
   this.childExpirationTime = NoWork;
-  // alternate和workInProgress, workInProgress每次更新都会重建，而workInProgress的alternate属性指的是本次更新之前的那个版本的fiber 
+  // alternate即workInProgress,代表处于work状态的fiber workInProgress每次更新都会重建，而workInProgress的alternate属性指的是当前fiber
   this.alternate = null;
 
   if (enableProfilerTimer) {
@@ -361,6 +362,7 @@ export function resolveLazyComponentTag(Component: Function): WorkTag {
 }
 
 // This is used to create an alternate fiber to do work on.
+// 复用current的属性创建WorkInProgress
 export function createWorkInProgress(
   current: Fiber,
   pendingProps: any,

@@ -239,7 +239,7 @@ function cloneUpdateQueue<State>(
   };
   return queue;
 }
-
+//
 export function createUpdate(expirationTime: ExpirationTime): Update<*> {
   return {
     expirationTime: expirationTime,
@@ -252,16 +252,19 @@ export function createUpdate(expirationTime: ExpirationTime): Update<*> {
     nextEffect: null,
   };
 }
-
+// queue的连接方式，通过firstUpdate的next连接为一个列表链，而列表链中的最后一个指向lastUpdate
+// 而lastUpdate的next是没有的，而最后一个的next的是null
 function appendUpdateToQueue<State>(
   queue: UpdateQueue<State>,
   update: Update<State>,
 ) {
   // Append the update to the end of the list.
+  // 如果当前queue是空的,那么第一次和最后一个的指针都指向update
   if (queue.lastUpdate === null) {
     // Queue is empty
     queue.firstUpdate = queue.lastUpdate = update;
   } else {
+    // 非空，把最后一个lastUpdate的next指向update, 而把update赋值为最后一个lastUpdate
     queue.lastUpdate.next = update;
     queue.lastUpdate = update;
   }
@@ -269,41 +272,46 @@ function appendUpdateToQueue<State>(
 // 为Fiber.updateQueue添加UpdateQueue对象，UpdateQueue用于维护Update对象列表
 export function enqueueUpdate<State>(fiber: Fiber, update: Update<State>) {
   // Update queues are created lazily.
+  // alternate是上一次的fiber
   const alternate = fiber.alternate;
   let queue1;
   let queue2;
-  if (alternate === null) {
+  // 保证 只要存在fiber或者alternate那么一定有更新链表
+  if (alternate === null) { // 如果仅有当前fiber，则为初始化
     // There's only one fiber.
     queue1 = fiber.updateQueue;
     queue2 = null;
-    if (queue1 === null) {
+    if (queue1 === null) { // 如果当前fiber的更新链表存在则指向queue1，否则基于state创建一个updateQueue指向queue
       queue1 = fiber.updateQueue = createUpdateQueue(fiber.memoizedState);
     }
-  } else {
+  } else {// 既有alternate还有fiber则为已初始化
     // There are two owners.
     queue1 = fiber.updateQueue;
     queue2 = alternate.updateQueue;
     if (queue1 === null) {
-      if (queue2 === null) {
+      if (queue2 === null) { // fiber和alternate的更新列表都不存在，则基于state创建updateQueue分别指向queue1，queue2
         // Neither fiber has an update queue. Create new ones.
         queue1 = fiber.updateQueue = createUpdateQueue(fiber.memoizedState);
         queue2 = alternate.updateQueue = createUpdateQueue(
           alternate.memoizedState,
         );
-      } else {
+      } else { // 只有alternate的更新链表存在
         // Only one fiber has an update queue. Clone to create a new one.
+        // clone queue2 的state和部分指针 给queue1
         queue1 = fiber.updateQueue = cloneUpdateQueue(queue2);
       }
     } else {
-      if (queue2 === null) {
+      if (queue2 === null) { // 只有fiber的更新链表存在
         // Only one fiber has an update queue. Clone to create a new one.
         queue2 = alternate.updateQueue = cloneUpdateQueue(queue1);
-      } else {
+      } else { // 两个都存在
         // Both owners have an update queue.
       }
     }
   }
-  if (queue2 === null || queue1 === queue2) {
+  // 这块没看明白
+  // 大概意思是把update添加进updateQueue
+  if (queue2 === null || queue1 === queue2) { // 只有fiber没有alternate
     // There's only a single queue.
     appendUpdateToQueue(queue1, update);
   } else {

@@ -118,26 +118,27 @@ export function createFiberRoot(
 ): FiberRoot {
   // Cyclic construction. This cheats the type system right now because
   // stateNode is any.
+  // 创建HostRootFiber，HostRootFiber不对应任何组件，它的子fiber是根组件
+  // fiber是work的分割后的载体，先看下work是什么现在看下两者是如何联系起来的
   const uninitializedFiber = createHostRootFiber(isConcurrent);
 
   let root;
   if (enableSchedulerTracing) {
     root = ({
-      // 当前激活的根fiber，它是可变的。
       current: uninitializedFiber,
       // 和这个root关联的主节点的所有附加信息
       containerInfo: containerInfo,
       // 持续更新时使用
       pendingChildren: null,
-      // 最早等待的时间
+      // 未提交的但是可能挂起了 的最早和最晚的时间，所有任务的初始状态
       earliestPendingTime: NoWork,
-      // 最晚的等待时间
+      // 
       latestPendingTime: NoWork,
-      // 最早的暂停时间
+      // 未提交的但是挂起了 的最早和最晚时间
       earliestSuspendedTime: NoWork,
-      // 最晚的暂停时间
+      // 
       latestSuspendedTime: NoWork,
-      // promise的最晚发生的时间
+      // promise被resolve了的优先级（异步的优先级）
       latestPingedTime: NoWork,
       pingCache: null,
       // 如果抛出错误了，并且队列更新完了，然后再从根节点同步的渲染一次，之后再处理错误

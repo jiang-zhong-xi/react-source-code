@@ -237,6 +237,8 @@ function flushWork(didTimeout) {
 }
 
 function unstable_runWithPriority(priorityLevel, eventHandler) {
+  debugger
+  // 默认值的实现方式
   switch (priorityLevel) {
     case ImmediatePriority:
     case UserBlockingPriority:
@@ -315,6 +317,7 @@ function unstable_wrapCallback(callback) {
 }
 
 function unstable_scheduleCallback(callback, deprecated_options) {
+  debugger
   var startTime =
     currentEventStartTime !== -1 ? currentEventStartTime : getCurrentTime();
 
@@ -490,6 +493,7 @@ var requestAnimationFrameWithTimeout = function(callback) {
     localClearTimeout(rAFTimeoutID);
     callback(timestamp);
   });
+  // 如果到了ANIMATION_FRAME_TIMEOUT时间还没有执行requestAnimation
   rAFTimeoutID = localSetTimeout(function() {
     // cancel the requestAnimationFrame
     localCancelAnimationFrame(rAFID);

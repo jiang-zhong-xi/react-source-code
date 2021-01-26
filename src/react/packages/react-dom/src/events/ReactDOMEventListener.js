@@ -142,6 +142,7 @@ export function trapBubbledEvent(
   topLevelType: DOMTopLevelEventType,
   element: Document | Element,
 ) {
+  debugger
   if (!element) {
     return null;
   }

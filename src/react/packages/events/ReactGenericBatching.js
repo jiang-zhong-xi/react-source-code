@@ -27,6 +27,7 @@ let _flushInteractiveUpdatesImpl = function() {};
 
 let isBatching = false;
 export function batchedUpdates(fn, bookkeeping) {
+  debugger
   if (isBatching) {
     // If we are currently inside another batch, we need to wait until it
     // fully completes before restoring state.
