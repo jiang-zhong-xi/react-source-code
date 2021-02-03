@@ -181,7 +181,7 @@ export function updateContainerAtExpirationTime(
       }
     }
   }
-
+  // context是干啥用的
   const context = getContextForSubtree(parentComponent);
   if (container.context === null) {
     container.context = context; // {}

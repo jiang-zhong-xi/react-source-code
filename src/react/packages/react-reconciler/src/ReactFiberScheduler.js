@@ -598,7 +598,7 @@ function markLegacyErrorBoundaryAsFailed(instance: mixed) {
     legacyErrorBoundariesThatAlreadyFailed.add(instance);
   }
 }
-
+// 在commit阶段赋值
 function flushPassiveEffects() {
   if (passiveEffectCallbackHandle !== null) {
     cancelPassiveEffects(passiveEffectCallbackHandle);
@@ -965,7 +965,9 @@ function resetChildExpirationTime(
 
   workInProgress.childExpirationTime = newChildExpirationTime;
 }
-// workInProgress是根fiber，当所有unit work完成后执行该函数
+// 当beginWork遍历reactDOM一直到最内层的节点时会调用completeUnitOfWork 这个过程时由外到内
+// completeUnitOfWork 完成reactDOM到DOM的生成，DOM节点的挂载 这个过程是由内到外
+//  
 function completeUnitOfWork(workInProgress: Fiber): Fiber | null {
   // Attempt to complete the current unit of work, then move to the
   // next sibling. If there are no more siblings, return to the
@@ -1026,7 +1028,8 @@ function completeUnitOfWork(workInProgress: Fiber): Fiber | null {
         // Completing this fiber spawned new work. Work on that next.
         return nextUnitOfWork;
       }
-
+      // 把fiber中的sideEffect一级级往上推
+      // 最终推给HostFiber
       if (
         returnFiber !== null &&
         // Do not append effects to parents if a sibling failed to complete
@@ -1241,6 +1244,7 @@ function renderRoot(root: FiberRoot, isYieldy: boolean): void {
   flushPassiveEffects();
 
   isWorking = true;
+  // react hooks相关
   const previousDispatcher = ReactCurrentDispatcher.current;
   ReactCurrentDispatcher.current = ContextOnlyDispatcher;
 
@@ -1540,6 +1544,7 @@ function renderRoot(root: FiberRoot, isYieldy: boolean): void {
   }
 
   // Ready to commit.
+  // 每次都是提交HostFiber
   onComplete(root, rootWorkInProgress, expirationTime);
 }
 
@@ -2000,6 +2005,8 @@ function scheduleCallbackWithExpirationTime(
   root: FiberRoot,
   expirationTime: ExpirationTime,
 ) {
+  // 如果已有的callback还没有完成并且优先级更高那么就还是现有的callback
+  // 如果已有的callback还没有完成并且优先级更低那么如果还没有取消就调用cancelDeferredCallback取消
   if (callbackExpirationTime !== NoWork) {
     // A callback is already scheduled. Check its expiration time (timeout).
     if (expirationTime < callbackExpirationTime) {
@@ -2018,7 +2025,10 @@ function scheduleCallbackWithExpirationTime(
   }
   // 当前存在异步回调的优先级比已存在的高
   callbackExpirationTime = expirationTime;
+  // 现在和程序开始运行时的时间差
   const currentMs = now() - originalStartTimeMs;
+  // 把当前fiber的expirationTime转为1ms单位的
+  // fiber确定优先级的时候和程序开始运行时的时间差
   const expirationTimeMs = expirationTimeToMs(expirationTime);
   const timeout = expirationTimeMs - currentMs;
   callbackID = scheduleDeferredCallback(performAsyncWork, {timeout});

@@ -182,9 +182,9 @@ export type UpdateQueue<State> = {
   lastCapturedEffect: Update<State> | null,
 };
 
-export const UpdateState = 0;
-export const ReplaceState = 1;
-export const ForceUpdate = 2;
+export const UpdateState = 0; // 新state和之前的state合并
+export const ReplaceState = 1; // 直接用新state替换直接的state
+export const ForceUpdate = 2; // 返回直接的state
 export const CaptureUpdate = 3;
 
 // Global state that is reset at the beginning of calling `processUpdateQueue`.
@@ -471,7 +471,7 @@ function getStateFromUpdate<State>(
   }
   return prevState;
 }
-
+// 处理更新队列，重新计算state
 export function processUpdateQueue<State>(
   workInProgress: Fiber,
   queue: UpdateQueue<State>,
@@ -519,6 +519,7 @@ export function processUpdateQueue<State>(
     } else {
       // This update does have sufficient priority. Process it and compute
       // a new result.
+      // 这个update的优先级够，处理这个update然后返回新的state
       resultState = getStateFromUpdate(
         workInProgress,
         queue,
@@ -528,6 +529,7 @@ export function processUpdateQueue<State>(
         instance,
       );
       const callback = update.callback;
+      // callback不为空 effectTag标识为Callback
       if (callback !== null) {
         workInProgress.effectTag |= Callback;
         // Set this to null, in case it was mutated during an aborted render.

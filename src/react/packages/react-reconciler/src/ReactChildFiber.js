@@ -264,7 +264,7 @@ function ChildReconciler(shouldTrackSideEffects) {
     childToDelete.nextEffect = null;
     childToDelete.effectTag = Deletion;
   }
-  // 当前元素以及所有同级元素都加入sideEffect（DELETE）列表
+  // 当前元素以及所有同级元素都加入父fiber的sideEffect（DELETE）列表
   function deleteRemainingChildren(
     returnFiber: Fiber,
     currentFirstChild: Fiber | null,
@@ -318,8 +318,8 @@ function ChildReconciler(shouldTrackSideEffects) {
     return clone;
   }
   /*
-    1. fiber插入index；
-    2. 保持新的fiber的是一种index升序，把不符合这种排序的fiber标记为Placement，以后加入sideEffect中，最后执行插入或者移动
+    1. 新fiber中添加index属性；
+    2. 保持新的fiber的是一种index（这里指的时旧的fiber的index）升序，把不符合这种排序的fiber标记为Placement，以后加入sideEffect中，最后执行插入或者移动
   */
   function placeChild(
     newFiber: Fiber,
@@ -386,7 +386,8 @@ function ChildReconciler(shouldTrackSideEffects) {
       return existing;
     }
   }
-
+  // 进入这个函数说明Key已经相同了
+  // 如果type也相同可以复用fiber否则就要新建（插入的sideEffect）
   function updateElement(
     returnFiber: Fiber,
     current: Fiber | null,
@@ -443,7 +444,7 @@ function ChildReconciler(shouldTrackSideEffects) {
       return existing;
     }
   }
-
+  // 和textNode是一样的逻辑，如果旧的节点是Null或者不是fragment则直接新建，然后插入，否则重用
   function updateFragment(
     returnFiber: Fiber,
     current: Fiber | null,
@@ -549,8 +550,9 @@ function ChildReconciler(shouldTrackSideEffects) {
       // Text nodes don't have keys. If the previous node is implicitly keyed
       // we can continue to replace it without aborting even if it is not a text
       // node.
+      // textNode节点不应该有key。如果之前的节点有key我们不用aborting可以直接替换之前节点，尽管它不是textNode
       if (key !== null) {
-        return null;
+        return null; // 替换
       }
       return updateTextNode(
         returnFiber,
@@ -746,14 +748,25 @@ function ChildReconciler(shouldTrackSideEffects) {
     }
     return knownKeys;
   }
-
+  /**
+   * 数组Diff的实现！！！
+   * 1. 首先匹配相同索引号的元素和旧的fiber，如果key不同则直接退出匹配循环，如果key相同，比较type是否相同，相同则复用，不同则新建
+   * 2. 如果新的元素遍历完毕了则直接退出reconcileChildrenArray
+   * 3. 如果oldFiber遍历完了，则把剩下的新元素对应的fiber都新建
+   * 4. 如果oldFiber还有，新元素也没遍历完，则通过map形式进行新元素和旧fiber是否可重用的匹配
+   * 
+   * 这里有个关键点是lastPlacedIndex，这个值始终保持新元素的fiber如果是复用的旧fiber的最大的index
+   * 这样就能实现复用的节点保持不动，提高性能
+   * 再就是如果新元素和旧fiber是完全对应的（key，index，element）则在第一轮后直接旧匹配完了
+   * 就算最后新元素和旧节点都有，那么也通过map实现高效的匹配
+  */
   function reconcileChildrenArray(
     returnFiber: Fiber,
     currentFirstChild: Fiber | null,
     newChildren: Array<*>,
     expirationTime: ExpirationTime,
   ): Fiber | null {
-
+    debugger
     if (__DEV__) {
       // First, validate keys.
       let knownKeys = null;
@@ -770,6 +783,7 @@ function ChildReconciler(shouldTrackSideEffects) {
     let oldFiber = currentFirstChild;
     // lastPlacedIndex记录遍历过程中index的最大值，目的是让最终的fiber链表中“不移位”的fiber保持升序，“移位”的fiber标记出来
     let lastPlacedIndex = 0;
+    // 遍历新元素的游标
     let newIdx = 0;
     // 当前旧的fiber链表中的fiber下一个fiber
     let nextOldFiber = null;
@@ -777,35 +791,51 @@ function ChildReconciler(shouldTrackSideEffects) {
       本轮循环一旦出现相同位置的不匹配或者原有的fiber都遍历完了就立即停止循环
     */
     for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
+      // oldFiber和newIdx是同步遍历的，也就是newIdx增加时，oldFiber会遍历到下一个
       if (oldFiber.index > newIdx) {
+        // 这种情况应该比较少见，oldFibr和newIdx递增不一样
         nextOldFiber = oldFiber;
         oldFiber = null;
       } else {
         nextOldFiber = oldFiber.sibling;
       }
+      // 匹配相同位置的旧fiber和当前element的key，如果key则返回null
+      // 如果key相同并且type相同则复用，如果key相同但是type不同则新建
       const newFiber = updateSlot(
         returnFiber,
         oldFiber,
         newChildren[newIdx],
         expirationTime,
       );
-      if (newFiber === null) {
+      if (newFiber === null) { // key不同终止遍历
         // TODO: This breaks on empty slots like null children. That's
         // unfortunate because it triggers the slow path all the time. We need
         // a better way to communicate whether this was a miss or null,
         // boolean, undefined, etc.
-        if (oldFiber === null) {
+        if (oldFiber === null) { // 这个旧fiber匹配完了，从下一个开始
           oldFiber = nextOldFiber;
         }
         break;
       }
+      // 新fiber时新建的或者复用的才能到这一步
       if (shouldTrackSideEffects) {
+        // 新建的新fiber，说明key相同但是type不同，把旧fiber删掉
+        // 旧fiber的删除的sideEffect在returnFiber
         if (oldFiber && newFiber.alternate === null) {
           // We matched the slot, but we didn't reuse the existing fiber, so we
           // need to delete the existing child.
           deleteChild(returnFiber, oldFiber);
         }
       }
+      // 第一次时 resultingFirstChild和prevNewFiber都是null
+      // 第一次赋值后 resultingFirstChild和prevNewFiber都指向同一个对象
+      // 第二此赋值时 prevNewFiber的sibling属性指向新fiber，所以此时resultingFirstChild的fiber也指向新fiber
+      // 以后赋值时 prevNewFiber和resultingFirstChild的下层的sibling都是上一个元素
+
+      // 通过previousNewFiber和previousNewFiber维持一个链表结构
+      // 这里previousNewFiber的作用是不用遍历所有resultingFirstChild
+      // 才能获取最后一个节点，是一种优化
+      // 新节点是移动还是添加的sideEffect在此添加到新的fiber中的sideEffect属性
       lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
       if (previousNewFiber === null) {
         // TODO: Move out of the loop. This only happens for the first run.
@@ -821,7 +851,7 @@ function ChildReconciler(shouldTrackSideEffects) {
       oldFiber = nextOldFiber;
     }
     /*
-      已经遍历完所有新fiber
+      已经遍历完并且生成完所有新fiber，此时把oldFiber都再sideEffect中标记为删除
     */
     if (newIdx === newChildren.length) {
       // We've reached the end of the new children. We can delete the rest.
@@ -829,7 +859,7 @@ function ChildReconciler(shouldTrackSideEffects) {
       return resultingFirstChild;
     }
     /*
-      旧的fiber已经遍历完毕并且都和新的fiber在相同位置上匹配，此时剩余fiber都是新建即可
+      旧的fiber已经遍历完毕并且都和新的fiber在相同位置上匹配或者之前不存在fiber（初始化时），此时剩余fiber都是新建即可
     */
     if (oldFiber === null) { // 数组fiber通过fiber.sibling连接
       // If we don't have any more existing children we can choose a fast path
@@ -854,7 +884,8 @@ function ChildReconciler(shouldTrackSideEffects) {
       }
       return resultingFirstChild;
     }
-    // 把oldFiber以及其相邻元素添加到existingChildren中
+    // 把oldFiber以及其相邻元素添加到existingChildren中，fiber的key值或者index作为Key，fiber作为值
+    // 这就形成了一种散列表，查询速度更快
     // Add all children to a key map for quick lookups.
     const existingChildren = mapRemainingChildren(returnFiber, oldFiber);
     /*
@@ -1126,7 +1157,7 @@ function ChildReconciler(shouldTrackSideEffects) {
     const key = element.key;
     let child = currentFirstChild;
     /* 
-      从当前所有child中找出和新的childkey相同、type相同的，具体做法是遍历当前所有child和新的child做比较：
+      从当前所有child中找出和新的child key相同、type相同的，具体做法是遍历当前所有child和新的child做比较：
       1. 如果当前的child和新的child的key不同，则直接把已有的打标签为“DELETE”。
       2. 如果已有的child和新的child的key相同（都没有key也是相同）
         a. 如果是同类型的元素，把同级剩下的fiber添加到sideEffect队列并且打标签为“DELETE”，然后重用已有fiber去返回新的fiber

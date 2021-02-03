@@ -677,7 +677,7 @@ function updateClassComponent(
     如果instance不为空但是current为空说明中段了，可以重新开始，，
     如果instance不为空并且current不为空则需要更新
   */
-  if (instance === null) {
+  if (instance === null) { // 之前fiber的instance为空
     if (current !== null) {
       // An class component without an instance only mounts if it suspended
       // inside a non- concurrent tree, in an inconsistent state. We want to
@@ -702,7 +702,7 @@ function updateClassComponent(
       renderExpirationTime,
     );
     shouldUpdate = true;
-  } else if (current === null) {
+  } else if (current === null) { // 之前的fiber为空
     // In a resume, we'll already have an instance we can reuse.
     shouldUpdate = resumeMountClassInstance(
       workInProgress,

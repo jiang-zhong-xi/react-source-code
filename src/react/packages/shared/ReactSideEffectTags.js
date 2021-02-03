@@ -14,9 +14,11 @@ export const NoEffect = /*              */ 0b000000000000; // 0
 export const PerformedWork = /*         */ 0b000000000001; // 1
 
 // You can change the rest (and add more).
+// 移动或者插入
 export const Placement = /*             */ 0b000000000010; // 2
 export const Update = /*                */ 0b000000000100; // 4
 export const PlacementAndUpdate = /*    */ 0b000000000110; // 6
+// 删除
 export const Deletion = /*              */ 0b000000001000; // 8
 export const ContentReset = /*          */ 0b000000010000; // 16
 export const Callback = /*              */ 0b000000100000; // 32

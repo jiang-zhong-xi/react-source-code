@@ -118,7 +118,7 @@ export function createFiberRoot(
 ): FiberRoot {
   // Cyclic construction. This cheats the type system right now because
   // stateNode is any.
-  // 创建HostRootFiber，HostRootFiber不对应任何组件，它的子fiber是根组件
+  // 创建HostRootFiber，HostRootFiber不对应任何组件，它的子fiber是根组件(ReactDOM.render的第一个参数)
   // fiber是work的分割后的载体，先看下work是什么现在看下两者是如何联系起来的
   const uninitializedFiber = createHostRootFiber(isConcurrent);
 
@@ -126,39 +126,24 @@ export function createFiberRoot(
   if (enableSchedulerTracing) {
     root = ({
       current: uninitializedFiber,
-      // 和这个root关联的主节点的所有附加信息
+      // 和这个root关联的主节点的所有附加信息(ReactDOM.render的第二参数)
       containerInfo: containerInfo,
-      // 持续更新时使用
       pendingChildren: null,
-      // 未提交的但是可能挂起了 的最早和最晚的时间，所有任务的初始状态
       earliestPendingTime: NoWork,
-      // 
       latestPendingTime: NoWork,
-      // 未提交的但是挂起了 的最早和最晚时间
       earliestSuspendedTime: NoWork,
-      // 
       latestSuspendedTime: NoWork,
-      // promise被resolve了的优先级（异步的优先级）
       latestPingedTime: NoWork,
       pingCache: null,
-      // 如果抛出错误了，并且队列更新完了，然后再从根节点同步的渲染一次，之后再处理错误
       didError: false,
-      // 等待提交的最晚时间
       pendingCommitExpirationTime: NoWork,
-      // 准备提交的完成work-in-progress的主根节点
       finishedWork: null,
-      // setTimeout回调处理函数
       timeoutHandle: noTimeout,
-      // 最顶层的上下文环境
       context: null,
-      // 最顶层的等待的上下文环境
       pendingContext: null,
       hydrate,
-      // 保留这个根节点的过期时间
       nextExpirationTimeToWorkOn: NoWork,
-      // 过期时间
       expirationTime: NoWork,
-      // 顶层批量列表，该列表指定是否提交被延迟
       firstBatch: null,
       // 把所有根节点连接起来
       nextScheduledRoot: null,

@@ -12,6 +12,8 @@
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/is
  */
 function is(x: any, y: any) {
+  // (x !== x && y !== y) 弥补NaN !== NaN的问题 如果和自身都不相等肯定是NaN
+  // 1 / x === 1 / y +0 === -0 是true但是 -Infinity === Infinity 是false
   return (
     (x === y && (x !== 0 || 1 / x === 1 / y)) || (x !== x && y !== y) // eslint-disable-line no-self-compare
   );

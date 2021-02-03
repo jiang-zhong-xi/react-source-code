@@ -103,7 +103,7 @@ let updateHostText;
 if (supportsMutation) {
   // Mutation mode
   /* 
-    对于HostComponent或者HostText元素，都是插入父元素，一级级最终把所有元素插入跟根元素
+    当前fiber的DOM是parent，遍历当前fiber的childfiber，如果是HostComponent或者HostText元素插入parent中，
   */
   appendAllChildren = function(
     parent: Instance,
@@ -131,6 +131,7 @@ if (supportsMutation) {
         return;
       }
       while (node.sibling === null) {
+       //  node的上级节点就是workInProgress控制只用添加子fiber的DOM
         if (node.return === null || node.return === workInProgress) {
           return;
         }
@@ -541,7 +542,11 @@ if (supportsMutation) {
     // Noop
   };
 }
-// 首先
+/**
+ * 1. 根据type生成新DOM
+ * 2. 把子DOM元素添加到新DOM
+ * 3. 新DOM各项属性赋值
+*/
 function completeWork(
   current: Fiber | null,
   workInProgress: Fiber,

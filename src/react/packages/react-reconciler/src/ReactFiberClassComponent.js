@@ -238,7 +238,7 @@ const classComponentUpdater = {
     scheduleWork(fiber, expirationTime);
   },
 };
-
+// 检查存在shouldComponentUpdate声明，然后调用，返回执行结果
 function checkShouldComponentUpdate(
   workInProgress,
   ctor,
@@ -745,6 +745,7 @@ function callComponentWillReceiveProps(
 
 // Invokes the mount life-cycles on a previously never rendered instance.
 // getDerivedStateFromProps 
+// 把fiber中的最新的state和props、ref值给instance，执行队列更新、执行getDerivedStateFromProps、执行componentWillMount、执行队列更新
 function mountClassInstance(
   workInProgress: Fiber,
   ctor: any,
@@ -892,6 +893,7 @@ function resumeMountClassInstance(
 
   // In order to support react-lifecycles-compat polyfilled components,
   // Unsafe lifecycles should not be invoked for components using the new APIs.
+  // 声明了getDerivedStateFromProps就不执行componentWillReceiveProps了
   if (
     !hasNewLifecycles &&
     (typeof instance.UNSAFE_componentWillReceiveProps === 'function' ||
@@ -1004,7 +1006,7 @@ function resumeMountClassInstance(
 // Invokes the update life-cycles and returns false if it shouldn't rerender.
 /* 
   1. 执行队列中的更新（state更新）
-  2. 检查是否有更新
+  2. 检查是否props和state有更新
   3. 根据检查结果去存储如果存在则应调用的生命周期
   4. 返回是否更新标识
 */
@@ -1049,6 +1051,7 @@ function updateClassInstance(
     (typeof instance.UNSAFE_componentWillReceiveProps === 'function' ||
       typeof instance.componentWillReceiveProps === 'function')
   ) {
+    // 如果有componentWillReceiveProps并且props变化了调用callComponentWillReceiveProps
     if (oldProps !== newProps || oldContext !== nextContext) {
       callComponentWillReceiveProps(
         workInProgress,
@@ -1074,7 +1077,8 @@ function updateClassInstance(
     );
     newState = workInProgress.memoizedState;
   }
-
+  // 如果state和props都变化了并且componentDidUpdate和getSnapshotBeforeUpdate都声明了
+  // 那么effectTag添加Update、Snapshot标识
   if (
     oldProps === newProps &&
     oldState === newState &&
